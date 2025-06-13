@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friends Gallery – Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Consolas', monospace; background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%); color: #333; min-height: 100vh; }
+
+    /* LOGIN PAGE */
+    #loginPage {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.2);
+    }
+    .login-panel {
+      background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+      padding: 40px; border-radius: 16px; width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .login-panel h2 { margin-bottom: 20px; font-size: 1.8em; }
+    .login-panel input {
+      width: 100%; padding: 12px; margin-bottom: 15px;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 1em;
+    }
+    .login-panel button {
+      width: 100%; padding: 12px;
+      background: rgba(0,120,215,0.8); color: #fff;
+      border: none; border-radius: 8px; font-size: 1em;
+      cursor: pointer; transition: background 0.3s ease;
+    }
+    .login-panel button:hover { background: rgba(0,120,215,1); }
+
+    /* HIDE APP UNTIL LOGIN */
+    #app { display: none; }
+
+    /* GLASS PANEL BASE */
+    .glass {
+      background: rgba(255,255,255,0.6); backdrop-filter: blur(10px);
+      border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    /* CONTAINER */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* HEADER */
+    .header {
+      text-align: center; margin-bottom: 40px; padding: 30px;
+    }
+    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .header p { font-size: 1.2em; color: #555; }
+
+    /* UPLOAD SECTION */
+    .upload-section {
+      text-align: center; padding: 30px; margin-bottom: 40px;
+    }
+    .upload-section h2 { margin-bottom: 15px; font-size: 1.8em; }
+    .upload-section p { margin-bottom: 20px; color: #555; }
+    .upload-button {
+      background: rgba(255,255,255,0.8); border: 2px solid #ddd;
+      padding: 12px 28px; border-radius: 50px; cursor: pointer;
+      transition: background 0.3s, transform 0.3s; font-size: 1em;
+    }
+    .upload-button:hover { background: rgba(255,255,255,1); transform: translateY(-2px); }
+    #fileInput { display: none; }
+
+    /* MASONRY-STYLE GALLERY */
+    .gallery { column-width: 300px; column-gap: 20px; }
+    .media-item {
+      display: inline-block; width: 100%; margin-bottom: 20px;
+      position: relative; transition: transform 0.3s, box-shadow 0.3s;
+      animation: fadeIn 0.5s ease;
+    }
+    .media-item:hover {
+      transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+    .media-item .glass { padding: 0; overflow: hidden; border-radius: 16px; }
+    .media-item img,
+    .media-item video { width: 100%; height: auto; display: block; }
+    .delete-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(200,0,0,0.8); color: #fff;
+      border: none; border-radius: 50%; width: 30px; height: 30px;
+      cursor: pointer; font-size: 16px; line-height: 30px;
+      text-align: center; opacity: 0; transition: opacity 0.3s;
+    }
+    .media-item:hover .delete-btn { opacity: 1; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: #555;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .gallery { column-width: 200px; column-gap: 15px; }
+      .header h1 { font-size: 2em; }
+      .container { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN PAGE -->
+  <div id="loginPage">
+    <div class="login-panel">
+      <h2>Log In</h2>
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button onclick="doLogin()">Enter</button>
+    </div>
+  </div>
+
+  <!-- APP CONTENT -->
+  <div id="app">
+    <div class="container">
+      <div class="header glass">
+        <h1>Friends Gallery</h1>
+        <p>Share your favorite moments with friends!</p>
+      </div>
+
+      <div class="upload-section glass">
+        <h2>Upload New Memories</h2>
+        <p>Share photos and videos with your friends!</p>
+        <button class="upload-button" onclick="fileInput.click()">Choose Files</button>
+        <!-- now accepts QuickTime movies explicitly -->
+        <input
+          type="file"
+          id="fileInput"
+          multiple
+          accept="image/*,video/*,video/quicktime"
+        >
+        <p style="margin-top:15px; font-size:0.9em; color:#555;">
+          Supports: JPG, PNG, GIF, MP4, MOV, AVI
+        </p>
+      </div>
+
+      <div id="gallery" class="gallery"></div>
+      <div id="emptyState" class="empty-state glass">
+        <h3>No memories yet!</h3>
+        <p>Upload some photos and videos to get started</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function doLogin() {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      if (u === 'CS' && p === 'CS2022') {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+      } else {
+        alert('Invalid username or password.');
+      }
+    }
+
+    let mediaItems = [], nextId = 1;
+    const fileInput  = document.getElementById('fileInput'),
+          gallery    = document.getElementById('gallery'),
+          emptyState = document.getElementById('emptyState');
+
+    const itemsPerLoad = 10;
+    let loadedCount = itemsPerLoad;
+
+    // Infinite scroll handler
+    window.addEventListener('scroll', () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+        loadMore();
+      }
+    });
+
+    fileInput.addEventListener('change', e => {
+      // Reset loaded count on new uploads
+      loadedCount = itemsPerLoad;
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        if (!(file.type.startsWith('image/') || file.type.startsWith('video/'))) return;
+        const reader = new FileReader();
+        reader.onload = evt => {
+          mediaItems.push({ id: nextId++, mime: file.type, src: evt.target.result });
+          renderGallery();
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = '';
+    });
+
+    function renderGallery() {
+      if (!mediaItems.length) {
+        gallery.style.display    = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+      gallery.style.display    = 'block';
+      emptyState.style.display = 'none';
+
+      // Cap loadedCount to total items
+      loadedCount = Math.min(loadedCount, mediaItems.length);
+      const itemsToShow = mediaItems.slice(0, loadedCount);
+      gallery.innerHTML = itemsToShow.map(item => `
+        <div class="media-item">
+          <div class="glass">
+            <button class="delete-btn" onclick="deleteItem(${item.id})">×</button>
+            ${item.mime.startsWith('image/')
+              ? `<img src="${item.src}" alt="Memory">`
+              : `<video muted onmouseenter="this.play()" onmouseleave="this.pause()" controls>
+                   <source src="${item.src}" type="${item.mime}">
+                   Your browser doesn’t support this video format.
+                 </video>`
+            }
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function loadMore() {
+      if (loadedCount >= mediaItems.length) return;
+      const prevCount = loadedCount;
+      loadedCount = Math.min(loadedCount + itemsPerLoad, mediaItems.length);
+      const newItems = mediaItems.slice(prevCount, loadedCount);
+      const html = newItems.map(item => `
+        <div class="media-item">
+          <div class="glass">
+            <button class="delete-btn" onclick="deleteItem(${item.id})">×</button>
+            ${item.mime.startsWith('image/')
+              ? `<img src="${item.src}" alt="Memory">`
+              : `<video muted onmouseenter="this.play()" onmouseleave="this.pause()" controls>
+                   <source src="${item.src}" type="${item.mime}">
+                   Your browser doesn’t support this video format.
+                 </video>`
+            }
+          </div>
+        </div>
+      `).join('');
+      gallery.insertAdjacentHTML('beforeend', html);
+    }
+
+    function deleteItem(id) {
+      if (!confirm('Delete this item?')) return;
+      mediaItems = mediaItems.filter(i => i.id !== id);
+      loadedCount = Math.min(loadedCount, mediaItems.length);
+      renderGallery();
+    }
+
+    // Initial render (empty state)
+    renderGallery();
+  </script>
+</body>
+</html>
